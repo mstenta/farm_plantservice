@@ -1,0 +1,4 @@
+name = Farm Plant Service
+description = Provides integration with the Plant Data Service.
+core = 7.x
+package = farmOS Contrib

@@ -1,0 +1,108 @@
+<?php
+
+/**
+ * @file
+ * Plant service module.
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function farm_plantservice_menu() {
+
+  // Plant service test form.
+  $items['farm/plantservice'] = array(
+    'title' => 'Plant service test',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('farm_plantservice_test_form'),
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+
+  // Plant autocomplete path.
+  $items['farm/plantservice/autocomplete/%'] = array(
+    'title' => 'Autocomplete for plants',
+    'page callback' => 'farm_plantservice_autocomplete',
+    'page arguments' => array(3),
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
+ * Form for testing plant name autocomplete.
+ */
+function farm_plantservice_test_form($form, &$form_state) {
+
+  // Add a plant name textfield with autocomplete.
+  $form['plant'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Plant name'),
+    '#description' => t('Start typing a plant name to test the autocomplete.'),
+    '#autocomplete_path' => 'farm/plantservice/autocomplete',
+  );
+
+  // Return the form.
+  return $form;
+}
+
+/**
+ * Plant name autocomplete path.
+ *
+ * @param string $string
+ *   The string to search for.
+ */
+function farm_plantservice_autocomplete($string) {
+
+  // Create an empty array of matches.
+  $matches = array();
+
+  // Get the full list of plants.
+  $plants = farm_plantservice_plants();
+
+  // Iterate through the plants.
+  foreach ($plants as $plant) {
+
+    // If the string exists in the name, add it to the matches.
+    if (stripos($plant, $string) !== FALSE) {
+      $matches[] = $plant;
+    }
+  }
+
+  // Map to an associative array.
+  $matches = drupal_map_assoc($matches);
+
+  // Return the matches as JSON.
+  drupal_json_output($matches);
+}
+
+/**
+ * Get a list of plants from the plant data service.
+ */
+function farm_plantservice_plants() {
+
+  // Start an empty array.
+  $plants = array();
+
+  // Send the request and get a response.
+  $url = 'https://plantdataservice.app.cloud.gov/plants';
+  $response = drupal_http_request($url);
+
+  // Decode the JSON data.
+  $data = json_decode($response->data);
+
+  // If the data is empty, bail.
+  if (empty($data)) {
+    return $plants;
+  }
+
+  // Process the data into an array of soil names.
+  foreach ($data as $plant_id => $plant) {
+    $plants[$plant_id] = $plant->common_name;
+  }
+
+  // Return the array of plants.
+  return $plants;
+}
